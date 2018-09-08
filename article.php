@@ -34,11 +34,11 @@ class article{
       //更新对应的数据结构:记录文章已投票用户的集合、记录文章评分的有序集合、记录文章信息的散列表
       $user = intval($user);
       $article = intval($article);
-      if(!$user || $article){
+      if(!$user || !$article){
         return self::PARAM_ERROR;
       }
       $releaseTime = $this->redis->zscore("time:", "article:{$article}");//获取文章发布时间
-      if(time() > ($releaseTime + 7 * self::ONE_DAY_IN_SECONDS)){
+      if(time() > ($releaseTime + 7 * self::ONE_DAY_IN_SECONDS)){//投票时间已过期
         return self::VOTE_ERROR;
       }
       if($this->redis->sadd("voted:{$article}", 'user:{$user}')){
