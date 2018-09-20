@@ -41,11 +41,35 @@ class article{
       if(time() > ($releaseTime + 7 * self::ONE_DAY_IN_SECONDS)){//投票时间已过期
         return self::VOTE_ERROR;
       }
-      if($this->redis->sadd("voted:{$article}", 'user:{$user}')){
+      if($this->redis->sadd("voted:{$article}", "user:{$user}")){
         $this->redis->zincrby("score:", "article:{$article}", self::VOTE_SCORE);
         $this->redis->hincrby("article:{$article}", "votes", 1);
       }
        return self::SUCCESS;  
     }
+    /**
+     *@desc : 文章发布功能 
+     *@param: $user int 创建文章的用户id
+     *@param: $title string 文章标题
+     *@param: $link string 文章链接
+     */
+     public function post_article($user, $title, $link){
+        //发布文章首先需要生成一个文章id,然后要更新存储文章的散列表，
+        //然后需要更新两个有序表(记录文章发布时间和记录文章评分的),还需要把
+        //添加文章的用户加到记录文章投票用户的集合中
+        if(!$user || !$title || !$link){
+            return self::PARAM_ERROR;//参数错误
+        }
+        $article_id = string($this->redis->incr('article:'));
+        $voted = 'voted:' . $article_id;
+        $this->redis->sadd($voted, "user:{$user}");
+        $this->redis->expire($voted, 7 * self::ONE_DAY_IN_SECONDS);
+        $now = time();
+        $article = "article:{$article_id}";
+        $this->redis->hmset($article,'{"title" : $title, "link" : $link}, "poster" : $user, "time" : $now, "votes" : 1,}');
+        $this->redis->zadd('score:', $article, $now + self::VOTE_SCORE);
+        $this->redis->zadd('time:', $article, $now);
+        return $article_id;
+     }
 }
 ?>
