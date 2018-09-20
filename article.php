@@ -66,7 +66,7 @@ class article{
         $this->redis->expire($voted, 7 * self::ONE_DAY_IN_SECONDS);
         $now = time();
         $article = "article:{$article_id}";
-        $this->redis->hmset($article,'{"title" : $title, "link" : $link}, "poster" : $user, "time" : $now, "votes" : 1,}');
+        $this->redis->hmset($article,'{"title" : $title, "link" : $link, "poster" : $user, "time" : $now, "votes" : 1,}');
         $this->redis->zadd('score:', $article, $now + self::VOTE_SCORE);
         $this->redis->zadd('time:', $article, $now);
         return $article_id;
